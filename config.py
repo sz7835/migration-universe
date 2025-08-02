@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 # Set your remote MySQL DB URI here
-DB_URI = 'mysql+pymysql://szavala:fgrt56@161.132.202.110:3306/deltanet'
+DB_URI = 'mysql+pymysql://szavala:Szavala%401507@161.132.202.110:3306/deltanet'
 
 # Initialize Flask app with DB config
 def init_app(app):
