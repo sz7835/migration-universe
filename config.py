@@ -1,9 +1,7 @@
-# config.py
+from flask_sqlalchemy import SQLAlchemy
 
-from sqlalchemy import create_engine
+# Declare the db object
+db = SQLAlchemy()
 
-# Connection string without password
-DATABASE_URL = "mysql+pymysql://root:@161.132.202.110:3306/deltanet"
-
-# Create the SQLAlchemy engine
-engine = create_engine(DATABASE_URL)
+# Set your remote MySQL DB URI here
+DB_URI = 'mysql+pymysql://szavala:Szavala@1507@161.132.202.110:3306/registro_asistencias'
