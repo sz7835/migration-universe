@@ -138,3 +138,41 @@ def save_ticket_catalogo_servicio():
             "error": str(e),
             "message": "❌ Error al guardar el registro de actividad"
         }), 500
+
+
+# 🔧 ROUTE 5: Update a ticket activity in out_registro_actividad
+# This route updates fields like fecha, detalle, update_user, and update_date
+@catalogo_bp.route('/catalogo/UpdateTicketCatalogoServicio', methods=['PUT'])
+def update_ticket_catalogo_servicio():
+    try:
+        data = request.get_json()
+
+        # 🔒 Validate required fields
+        required_fields = ['id', 'fecha', 'detalle', 'update_user']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Missing field: {field}"}), 400
+
+        sql = text("""
+            UPDATE out_registro_actividad
+            SET
+                fecha = :fecha,
+                detalle = :detalle,
+                update_user = :update_user,
+                update_date = NOW()
+            WHERE id = :id
+        """)
+
+        db.session.execute(sql, {
+            "id": data['id'],
+            "fecha": data['fecha'],
+            "detalle": data['detalle'],
+            "update_user": data['update_user']
+        })
+        db.session.commit()
+
+        return jsonify({"message": "✔ Ticket actualizado correctamente"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e), "message": "❌ Error al actualizar ticket"}), 500
