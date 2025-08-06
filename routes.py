@@ -28,7 +28,7 @@ def read_all_catalogo_servicio(id_area):
         return jsonify({"error": str(e), "message": "❌ Error al obtener servicios"}), 500
 
 
-# ◆ ROUTE 2 (UPDATED): Get all areas from per_jur_area with more details
+# ◆ ROUTE 2 (TESTED): Get all areas from per_jur_area with more details
 # This route returns all area IDs, descriptions, and metadata (used for dropdowns, audits, etc.)
 
 @catalogo_bp.route('/ticket/generarTicket/read', methods=['GET'])
