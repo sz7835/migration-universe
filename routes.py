@@ -28,25 +28,41 @@ def read_all_catalogo_servicio(id_area):
         return jsonify({"error": str(e), "message": "❌ Error al obtener servicios"}), 500
 
 
-# 🔹 ROUTE 2 (TESTED): Get all areas from per_jur_area
-# This route returns all area IDs and descriptions (used to populate dropdowns, filters, etc.)
+# ◆ ROUTE 2 (UPDATED): Get all areas from per_jur_area with more details
+# This route returns all area IDs, descriptions, and metadata (used for dropdowns, audits, etc.)
+
 @catalogo_bp.route('/ticket/generarTicket/read', methods=['GET'])
 def read_all_areas():
     try:
         sql = text("""
-            SELECT id_area, descripcion
+            SELECT id_area, id_per_jur, descripcion, estado, 
+                   create_user, create_date, update_user, update_date
             FROM per_jur_area
         """)
         result = db.session.execute(sql).fetchall()
 
         areas = [
-            {"id_area": row[0], "descripcion": row[1]}
+            {
+                "id_area": row[0],
+                "id_per_jur": row[1],
+                "descripcion": row[2],
+                "estado": row[3],
+                "create_user": row[4],
+                "create_date": row[5].isoformat() if row[5] else None,
+                "update_user": row[6],
+                "update_date": row[7].isoformat() if row[7] else None
+            }
             for row in result
         ]
+
         return jsonify(areas)
 
     except Exception as e:
-        return jsonify({"error": str(e), "message": "❌ Error al obtener áreas"}), 500
+        return jsonify({
+            "error": str(e),
+            "message": "❌ Error al obtener áreas"
+        }), 500
+
 
 
 # 🔹 ROUTE 3: Get all "Tipo de Registro" values from sis_tipo_registro
@@ -70,7 +86,7 @@ def read_all_tipo_registro():
     except Exception as e:
         return jsonify({"error": str(e), "message": "❌ Error al obtener tipos de registro"}), 500
 
-# ✅ ROUTE 4: Save a Ticket Activity Record
+# ✅ ROUTE 4 (TESTED): Save a Ticket Activity Record
 # This route inserts a new ticket log into the 'out_registro_actividad' table.
 # It expects full data from the frontend, performs validation, and inserts with automatic timestamping.
 
