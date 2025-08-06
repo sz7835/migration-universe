@@ -1,3 +1,4 @@
+from flask import request
 from flask import Blueprint, jsonify
 from config import db
 from sqlalchemy import text
@@ -69,3 +70,55 @@ def read_all_tipo_registro():
     except Exception as e:
         return jsonify({"error": str(e), "message": "❌ Error al obtener tipos de registro"}), 500
 
+# ✅ ROUTE 4: Save a Ticket Activity Record
+# This route inserts a new ticket log into the 'out_registro_actividad' table.
+# It expects full data from the frontend, performs validation, and inserts with automatic timestamping.
+
+@catalogo_bp.route('/catalogo/SaveTicketCatalogoServicio', methods=['POST'])
+def save_ticket_catalogo_servicio():
+    try:
+        data = request.get_json()
+
+        # List of all required fields based on table structure
+        required_fields = [
+            'out_tipo_actividad_id',
+            'per_persona_id',
+            'fecha',
+            'detalle',
+            'create_user',
+            'create_date'
+        ]
+
+        # Loop through and verify that no required field is missing or empty
+        for field in required_fields:
+            if field not in data or data[field] in [None, ""]:
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+
+        # Prepare SQL insert using NOW() for automatic current timestamp on 'registro'
+        sql = text("""
+            INSERT INTO out_registro_actividad 
+                (out_tipo_actividad_id, per_persona_id, fecha, detalle, registro, create_user, create_date)
+            VALUES 
+                (:out_tipo_actividad_id, :per_persona_id, :fecha, :detalle, NOW(), :create_user, :create_date)
+        """)
+
+        # Execute SQL with provided data
+        db.session.execute(sql, {
+            "out_tipo_actividad_id": data['out_tipo_actividad_id'],
+            "per_persona_id": data['per_persona_id'],
+            "fecha": data['fecha'],
+            "detalle": data['detalle'],
+            "create_user": data['create_user'],
+            "create_date": data['create_date']
+        })
+
+        # Finalize transaction
+        db.session.commit()
+        return jsonify({"message": "✅ Registro de actividad guardado exitosamente"})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            "error": str(e),
+            "message": "❌ Error al guardar el registro de actividad"
+        }), 500
