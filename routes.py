@@ -140,7 +140,7 @@ def save_ticket_catalogo_servicio():
         }), 500
 
 
-# 🔧 ROUTE 5: Update a ticket activity in out_registro_actividad
+# 🔧 ROUTE 5 (TESTED): Update a ticket activity in out_registro_actividad
 # This route updates fields like fecha, detalle, update_user, and update_date
 @catalogo_bp.route('/catalogo/UpdateTicketCatalogoServicio', methods=['PUT'])
 def update_ticket_catalogo_servicio():
