@@ -48,7 +48,7 @@ def get_actividad_tipo():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# 📄 Route 2 (TESTED SUPER MEGA): Filter activity records by user, activity type, and date
+# 📄 Route 2 (TESTED SUPER FINALIZADO): Filter activity records by user, activity type, and date
 # - Endpoint: /actividades/filter
 # - Method: GET
 # - Parameters (query string):
