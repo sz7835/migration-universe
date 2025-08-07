@@ -159,6 +159,50 @@ def create_actividad():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+# 📄 Route 4 (TESTED COMPLETELY WORKING FINALIZADO): Filter hour records by person, status, and date range
+# - Endpoint: /registro-horas/index
+# - Method: GET
+# - Query Parameters:
+#     • idPersona     → maps to column `id_persona`
+#     • estado        → maps to column `estado`
+#     • fechaIniciof  → maps to column `dia` (start of range)
+#     • fechaFin      → maps to column `dia` (end of range)
+# - Description: Returns records from `out_registro_horas` table based on person, state, and date range
+
+@catalogo_bp.route('/registro-horas/index', methods=['GET'])
+def get_registro_horas_filtrado():
+    try:
+        id_persona = request.args.get('idPersona')
+        estado = request.args.get('estado')
+        fecha_inicio = request.args.get('fechaIniciof')
+        fecha_fin = request.args.get('fechaFin')
+
+        if not id_persona or not estado or not fecha_inicio or not fecha_fin:
+            return jsonify({'error': 'Faltan parámetros requeridos'}), 400
+
+        sql = text("""
+            SELECT *
+            FROM out_registro_horas
+            WHERE id_persona = :id_persona
+              AND estado = :estado
+              AND dia BETWEEN :fecha_inicio AND :fecha_fin
+        """)
+
+        result = db.session.execute(sql, {
+            'id_persona': id_persona,
+            'estado': estado,
+            'fecha_inicio': fecha_inicio,
+            'fecha_fin': fecha_fin
+        }).fetchall()
+
+        data = [dict(row._mapping) for row in result]
+        return jsonify(data), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
 
 # 📄 Route 21: Read all catalog services by area
 # - GET /ticket/catalogo/ReadAllCatalogoServicio/<id_area>
