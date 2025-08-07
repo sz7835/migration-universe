@@ -48,6 +48,47 @@ def get_actividad_tipo():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# 📄 Route 2 (TESTED SUPER MEGA): Filter activity records by user, activity type, and date
+# - Endpoint: /actividades/filter
+# - Method: GET
+# - Parameters (query string):
+#     • idPersona (e.g. 8)   → maps to column `per_persona_id`
+#     • idActividad (e.g. 9) → maps to column `out_tipo_actividad_id`
+#     • registro (yyyy-MM-dd) → maps to column `registro` (timestamp)
+# - Description: Returns a list of activity records matching the filters
+#   from the table `out_registro_actividad`.
+
+@catalogo_bp.route('/actividades/filter', methods=['GET'])
+def filter_actividades():
+    try:
+        id_persona = request.args.get('idPersona')
+        id_actividad = request.args.get('idActividad')
+        registro = request.args.get('registro')
+
+        if not id_persona or not id_actividad or not registro:
+            return jsonify({'error': 'Missing one or more required parameters'}), 400
+
+        # No need to convert registro to date – use string as-is
+        sql = text("""
+            SELECT *
+            FROM out_registro_actividad
+            WHERE per_persona_id = :id_persona
+              AND out_tipo_actividad_id = :id_actividad
+              AND DATE(registro) = :registro_date
+        """)
+
+        result = db.session.execute(sql, {
+            'id_persona': id_persona,
+            'id_actividad': id_actividad,
+            'registro_date': registro
+        }).fetchall()
+
+        data = [dict(row._mapping) for row in result]
+        return jsonify(data), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 # 📄 Route 21: Read all catalog services by area
 # - GET /ticket/catalogo/ReadAllCatalogoServicio/<id_area>
