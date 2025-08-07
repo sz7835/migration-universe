@@ -6,7 +6,7 @@ from sqlalchemy import text
 # Create a Blueprint for all catalog-related routes
 catalogo_bp = Blueprint('catalogo_bp', __name__)
 
-# 📄 Route 1: Get activity records by person, activity type, and date
+# 📄 Route 1 (TESTED COMPLETELY WORKING FINALIZADO): Get activity records by person, activity type, and date
 # - Endpoint: /actividades/tipoActividad
 # - Method: GET
 # - Input (query string): idPersona, idActividad, registro (yyyy-MM-dd)
@@ -44,7 +44,7 @@ def get_actividad_tipo():
         return jsonify({'error': str(e)}), 500
 
 
-# 📄 Route 2 (TESTED SUPER FINALIZADO): Filter activity records by user, activity type, and date
+# 📄 Route 2 (TESTED COMPLETELY WORKING FINALIZADO): Filter activity records by user, activity type, and date
 # - Endpoint: /actividades/filter
 # - Method: GET
 # - Parameters (query string):
