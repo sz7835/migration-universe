@@ -201,7 +201,69 @@ def get_registro_horas_filtrado():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# 📄 Route 5 (TESTED COMPLETELY WORKING FINALIZADO): Create hour records for a person and project
+# - Endpoint: /registro-horas/create
+# - Method: POST
+# - Body (JSON):
+# {
+#     "idProyecto": 280,
+#     "idPersona": 8,
+#     "detalle": [
+#         {"actividad": "test", "horas": "1"},
+#         {"actividad": "test 2", "horas": "2"}
+#     ],
+#     "dia": "2025-07-10",
+#     "createUser": "bsayan"
+# }
+# - Description: Creates multiple hour records in the table `out_registro_horas`
+#   for the given person and project on the specified date.
 
+@catalogo_bp.route('/registro-horas/create', methods=['POST'])
+def create_registro_horas():
+    try:
+        data = request.get_json()
+
+        id_proyecto = data.get('idProyecto')
+        id_persona = data.get('idPersona')
+        detalle = data.get('detalle')  # This should be a list of dicts
+        dia = data.get('dia')
+        create_user = data.get('createUser')
+
+        # Basic validation
+        if not id_proyecto or not id_persona or not detalle or not dia or not create_user:
+            return jsonify({'error': 'Faltan datos requeridos'}), 400
+
+        for item in detalle:
+            actividad = item.get('actividad')
+            horas = item.get('horas')
+
+            if not actividad or not horas:
+                return jsonify({'error': 'Cada detalle debe incluir actividad y horas'}), 400
+
+            sql = text("""
+                INSERT INTO out_registro_horas (
+                    id_proyecto, id_persona, actividad, horas, dia, estado, create_user, create_date
+                ) VALUES (
+                    :id_proyecto, :id_persona, :actividad, :horas, :dia, :estado, :create_user, NOW()
+                )
+            """)
+
+            db.session.execute(sql, {
+                'id_proyecto': id_proyecto,
+                'id_persona': id_persona,
+                'actividad': actividad,
+                'horas': horas,
+                'dia': dia,
+                'estado': 1,
+                'create_user': create_user
+            })
+
+        db.session.commit()
+        return jsonify({'mensaje': 'Registros creados correctamente.'}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 
 # 📄 Route 21: Read all catalog services by area
