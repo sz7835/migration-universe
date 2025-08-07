@@ -6,23 +6,19 @@ from sqlalchemy import text
 # Create a Blueprint for all catalog-related routes
 catalogo_bp = Blueprint('catalogo_bp', __name__)
 
-
-# 📄 Route 1 (TESTED SUPER): Get activity records filtered by user, activity type, and date
+# 📄 Route 1: Get activity records by person, activity type, and date
 # - Endpoint: /actividades/tipoActividad
 # - Method: GET
-# - Parameters (query or form-data):
-#     • idActividad (e.g. 1) → maps to column `out_tipo_actividad_id`
-#     • idPersona (e.g. 9)   → maps to column `per_persona_id`
-#     • registro (yyyy-MM-dd) → maps to column `registro` (timestamp)
-# - Description: Returns a list of activity records matching all three filters
-#   from the table `out_registro_actividad`.
+# - Input (query string): idPersona, idActividad, registro (yyyy-MM-dd)
+# - Example: /actividades/tipoActividad?idPersona=8&idActividad=9&registro=2025-07-10
+# - Description: Returns activity records from out_registro_actividad table filtered by person, activity type, and date
 
 @catalogo_bp.route('/actividades/tipoActividad', methods=['GET'])
 def get_actividad_tipo():
     try:
         id_actividad = request.args.get('idActividad')
         id_persona = request.args.get('idPersona')
-        registro = request.args.get('registro')
+        registro = request.args.get('registro')  # format: yyyy-MM-dd
 
         if not id_actividad or not id_persona or not registro:
             return jsonify({'error': 'Missing one or more required parameters'}), 400
@@ -32,21 +28,21 @@ def get_actividad_tipo():
             FROM out_registro_actividad
             WHERE per_persona_id = :id_persona
               AND out_tipo_actividad_id = :id_actividad
-              AND DATE(registro) = :registro
+              AND DATE(registro) = :registro_date
         """)
 
         result = db.session.execute(sql, {
             'id_persona': id_persona,
             'id_actividad': id_actividad,
-            'registro': registro
+            'registro_date': registro
         }).fetchall()
 
-        # ✅ FIXED: Use _mapping to avoid Row object conversion error
         data = [dict(row._mapping) for row in result]
         return jsonify(data), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 # 📄 Route 2 (TESTED SUPER FINALIZADO): Filter activity records by user, activity type, and date
 # - Endpoint: /actividades/filter
