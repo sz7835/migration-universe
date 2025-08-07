@@ -2,6 +2,7 @@ from flask import request
 from flask import Blueprint, jsonify
 from config import db
 from sqlalchemy import text
+from datetime import datetime
 
 # Create a Blueprint for all catalog-related routes
 catalogo_bp = Blueprint('catalogo_bp', __name__)
@@ -83,6 +84,79 @@ def filter_actividades():
         return jsonify(data), 200
 
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# 📄 Route 3 (TESTED COMPLETELY WORKING FINALIZADO): Create a new activity record
+# - Endpoint: /actividades/create
+# - Method: POST
+# - Parameters (query string):
+#     • personalId (e.g. 8)         → maps to column `per_persona_id`
+#     • idTipoAct (e.g. 1)          → maps to column `out_tipo_actividad_id`
+#     • hora (HH:MM, e.g. 14:00)    → combined with fecha to form timestamp
+#     • fecha (YYYY-MM-DD, e.g. 2025-07-10) → saved to column `fecha`
+#     • createUser (e.g. bsayan)    → maps to column `create_user`
+#     • detalle (optional)          → maps to column `detalle`
+# - Description: Creates a new activity record for a given person and activity type.
+# - Expected Response: {"mensaje": "Actividad creada correctamente."}
+
+@catalogo_bp.route('/actividades/create', methods=['POST'])
+def create_actividad():
+    try:
+        # Required query params
+        persona_id = request.args.get('personalId')
+        tipo_actividad_id = request.args.get('idTipoAct')
+        hora = request.args.get('hora')  # format: HH:MM
+        fecha = request.args.get('fecha')  # format: YYYY-MM-DD
+        create_user = request.args.get('createUser')
+
+        # Optional param
+        detalle = request.args.get('detalle') or "Detalle no proporcionado"
+
+        # Validate required params
+        if not all([persona_id, tipo_actividad_id, hora, fecha, create_user]):
+            return jsonify({'error': 'Faltan parámetros obligatorios'}), 400
+
+        # Combine fecha and hora into timestamp
+        registro_str = f"{fecha} {hora}:00"
+        registro = datetime.strptime(registro_str, "%Y-%m-%d %H:%M:%S")
+
+        # ✅ INSERT including fecha column
+        sql = text("""
+            INSERT INTO out_registro_actividad (
+                per_persona_id,
+                out_tipo_actividad_id,
+                fecha,
+                registro,
+                detalle,
+                create_user,
+                create_date
+            )
+            VALUES (
+                :persona_id,
+                :tipo_actividad_id,
+                :fecha,
+                :registro,
+                :detalle,
+                :create_user,
+                NOW()
+            )
+        """)
+
+        db.session.execute(sql, {
+            'persona_id': persona_id,
+            'tipo_actividad_id': tipo_actividad_id,
+            'fecha': fecha,  # ✅ Include this
+            'registro': registro,
+            'detalle': detalle,
+            'create_user': create_user
+        })
+
+        db.session.commit()
+
+        return jsonify({'mensaje': 'Actividad creada correctamente.'}), 201
+
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 
