@@ -7,13 +7,8 @@ from datetime import datetime
 # Create a Blueprint for all catalog-related routes
 catalogo_bp = Blueprint('catalogo_bp', __name__)
 
-# 📄 Route 1 (TESTED COMPLETELY WORKING FINALIZADO): Get activity records by person, activity type, and date
-# - Endpoint: /actividades/tipoActividad
-# - Method: GET
-# - Input (query string): idPersona, idActividad, registro (yyyy-MM-dd)
-# - Example: /actividades/tipoActividad?idPersona=8&idActividad=9&registro=2025-07-10
-# - Description: Returns activity records from out_registro_actividad table filtered by person, activity type, and date
-
+# 📄 Ruta 1 (PROBADA Y FUNCIONAL): Obtiene los registros de actividad filtrados por persona, tipo de actividad y fecha.  
+# Devuelve los datos desde la tabla 'out_registro_actividad' usando los parámetros idPersona, idActividad y registro.
 @catalogo_bp.route('/actividades/tipoActividad', methods=['GET'])
 def get_actividad_tipo():
     try:
@@ -44,17 +39,8 @@ def get_actividad_tipo():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# 📄 Route 2 (TESTED COMPLETELY WORKING FINALIZADO): Filter activity records by user, activity type, and date
-# - Endpoint: /actividades/filter
-# - Method: GET
-# - Parameters (query string):
-#     • idPersona (e.g. 8)   → maps to column `per_persona_id`
-#     • idActividad (e.g. 9) → maps to column `out_tipo_actividad_id`
-#     • registro (yyyy-MM-dd) → maps to column `registro` (timestamp)
-# - Description: Returns a list of activity records matching the filters
-#   from the table `out_registro_actividad`.
-
+# 📄 Ruta 2 (PROBADA Y FUNCIONAL): Filtra los registros de actividad por persona, tipo de actividad y fecha.  
+# Devuelve una lista de resultados desde la tabla 'out_registro_actividad' que coincidan con los parámetros recibidos.
 @catalogo_bp.route('/actividades/filter', methods=['GET'])
 def filter_actividades():
     try:
@@ -86,19 +72,8 @@ def filter_actividades():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# 📄 Route 3 (TESTED COMPLETELY WORKING FINALIZADO): Create a new activity record
-# - Endpoint: /actividades/create
-# - Method: POST
-# - Parameters (query string):
-#     • personalId (e.g. 8)         → maps to column `per_persona_id`
-#     • idTipoAct (e.g. 1)          → maps to column `out_tipo_actividad_id`
-#     • hora (HH:MM, e.g. 14:00)    → combined with fecha to form timestamp
-#     • fecha (YYYY-MM-DD, e.g. 2025-07-10) → saved to column `fecha`
-#     • createUser (e.g. bsayan)    → maps to column `create_user`
-#     • detalle (optional)          → maps to column `detalle`
-# - Description: Creates a new activity record for a given person and activity type.
-# - Expected Response: {"mensaje": "Actividad creada correctamente."}
-
+# 📄 Ruta 3 (PROBADA Y FUNCIONAL): Crea un nuevo registro de actividad para una persona y un tipo de actividad específico.  
+# Recibe los datos por parámetros y guarda la información en la tabla 'out_registro_actividad'.
 @catalogo_bp.route('/actividades/create', methods=['POST'])
 def create_actividad():
     try:
@@ -159,16 +134,8 @@ def create_actividad():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-# 📄 Route 4 (TESTED COMPLETELY WORKING FINALIZADO): Filter hour records by person, status, and date range
-# - Endpoint: /registro-horas/index
-# - Method: GET
-# - Query Parameters:
-#     • idPersona     → maps to column `id_persona`
-#     • estado        → maps to column `estado`
-#     • fechaIniciof  → maps to column `dia` (start of range)
-#     • fechaFin      → maps to column `dia` (end of range)
-# - Description: Returns records from `out_registro_horas` table based on person, state, and date range
-
+# 📄 Ruta 4 (PROBADA Y FUNCIONAL): Filtra los registros de horas por persona, estado y rango de fechas.  
+# Devuelve los datos desde la tabla 'out_registro_horas' que coincidan con los parámetros especificados.
 @catalogo_bp.route('/registro-horas/index', methods=['GET'])
 def get_registro_horas_filtrado():
     try:
@@ -201,23 +168,8 @@ def get_registro_horas_filtrado():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# 📄 Route 5 (TESTED COMPLETELY WORKING FINALIZADO): Create hour records for a person and project
-# - Endpoint: /registro-horas/create
-# - Method: POST
-# - Body (JSON):
-# {
-#     "idProyecto": 280,
-#     "idPersona": 8,
-#     "detalle": [
-#         {"actividad": "test", "horas": "1"},
-#         {"actividad": "test 2", "horas": "2"}
-#     ],
-#     "dia": "2025-07-10",
-#     "createUser": "bsayan"
-# }
-# - Description: Creates multiple hour records in the table `out_registro_horas`
-#   for the given person and project on the specified date.
-
+# 📄 Ruta 5 (PROBADA Y FUNCIONAL): Crea múltiples registros de horas para una persona y un proyecto en una fecha determinada.  
+# Los datos se guardan en la tabla 'out_registro_horas' a partir del cuerpo JSON recibido.
 @catalogo_bp.route('/registro-horas/create', methods=['POST'])
 def create_registro_horas():
     try:
@@ -264,6 +216,40 @@ def create_registro_horas():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+# 📄 Ruta 6 (PROBADA Y FUNCIONAL): Lista Proyectos (mostrarProyecto)
+# Retorna los proyectos de la tabla 'out_registro_proyecto' asociados al idPersona indicado.
+@catalogo_bp.route('/registro-horas/mostrarProyecto', methods=['POST'])
+def mostrar_proyecto():
+    try:
+        id_persona = request.args.get('idPersona')
+
+        if not id_persona:
+            return jsonify({"error": "Missing 'idPersona' parameter"}), 400
+
+        sql = text("""
+            SELECT
+                id,
+                id_persona,
+                codigo,
+                descripcion,
+                estado,
+                create_user,
+                DATE_FORMAT(create_date, '%Y-%m-%d %H:%i:%s') AS create_date,
+                update_user,
+                DATE_FORMAT(update_date, '%Y-%m-%d %H:%i:%s') AS update_date
+            FROM out_registro_proyecto
+            WHERE id_persona = :id_persona
+            ORDER BY id DESC
+        """)
+
+        rows = db.session.execute(sql, {"id_persona": id_persona}).fetchall()
+        data = [dict(r._mapping) for r in rows]
+
+        return jsonify(data), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # 📄 Route 21: Read all catalog services by area
