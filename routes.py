@@ -352,6 +352,37 @@ def activate_registro_horas():
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
+# Route 10 (PROBADA Y FUNCIONAL): Filter projects by consultant (idConsultor), optional description, and status.
+# GET /registro-proyecto/index?idConsultor=8&proyectoDescripcion=foo&estado=9
+@catalogo_bp.route('/registro-proyecto/index', methods=['GET'])
+def filter_projects():
+    try:
+        id_persona = request.args.get('idConsultor')
+        descripcion = request.args.get('proyectoDescripcion')
+        estado = request.args.get('estado')
+        if not id_persona or not estado:
+            return jsonify({'error': 'Missing required params: idConsultor and estado'}), 400
+
+        sql = """
+            SELECT id, id_persona, descripcion, estado
+            FROM out_registro_proyecto
+            WHERE id_persona = :id_persona
+              AND estado = :estado
+        """
+        params = {'id_persona': id_persona, 'estado': estado}
+        if descripcion:
+            sql += " AND descripcion LIKE :descripcion"
+            params['descripcion'] = f"%{descripcion}%"
+        sql += " ORDER BY id DESC"
+
+        rows = db.session.execute(text(sql), params).fetchall()
+        return jsonify([dict(r._mapping) for r in rows]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
+
 
 # 📄 Route 21: Read all catalog services by area
 # - GET /ticket/catalogo/ReadAllCatalogoServicio/<id_area>
