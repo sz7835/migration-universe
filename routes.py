@@ -251,6 +251,39 @@ def mostrar_proyecto():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# 📄 Ruta 7 (PROBADA Y FUNCIONAL): Eliminar Registro de Horas (delete)
+# Elimina un registro de horas desde la tabla 'out_registro_horas' usando el id indicado.
+@catalogo_bp.route('/registro-horas/delete', methods=['DELETE'])
+def delete_registro_horas():
+    try:
+        # Obtener ID desde query string o JSON body
+        id_param = request.args.get('id')
+        if not id_param:
+            body_data = request.get_json(silent=True)
+            if body_data and 'id' in body_data:
+                id_param = body_data['id']
+
+        if not id_param:
+            return jsonify({"error": "Missing 'id' parameter"}), 400
+
+        sql = text("""
+            DELETE FROM out_registro_horas
+            WHERE id = :id
+        """)
+
+        result = db.session.execute(sql, {"id": id_param})
+        db.session.commit()
+
+        if result.rowcount == 0:
+            return jsonify({"message": f"No record found with id {id_param}"}), 404
+
+        return jsonify({"message": f"Record with id {id_param} deleted successfully"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
 
 # 📄 Route 21: Read all catalog services by area
 # - GET /ticket/catalogo/ReadAllCatalogoServicio/<id_area>
