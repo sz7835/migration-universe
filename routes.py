@@ -282,6 +282,45 @@ def delete_registro_horas():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# 📄 Ruta 8 (PROBADA Y FUNCIONAL): Actualizar Registro de Horas (update)
+# Actualiza los campos 'actividad', 'horas' y 'update_user' de un registro en 'out_registro_horas' usando el id indicado.
+@catalogo_bp.route('/registro-horas/update', methods=['POST'])
+def update_registro_horas():
+    try:
+        id_param = request.args.get('id')
+        actividad = request.args.get('actividad')
+        horas = request.args.get('horas')
+        update_user = request.args.get('update_user')
+
+        if not id_param or not actividad or not horas or not update_user:
+            return jsonify({"error": "Missing required parameters"}), 400
+
+        sql = text("""
+            UPDATE out_registro_horas
+            SET actividad = :actividad,
+                horas = :horas,
+                update_user = :update_user,
+                update_date = NOW()
+            WHERE id = :id
+        """)
+
+        result = db.session.execute(sql, {
+            "id": id_param,
+            "actividad": actividad,
+            "horas": horas,
+            "update_user": update_user
+        })
+        db.session.commit()
+
+        if result.rowcount == 0:
+            return jsonify({"message": f"No record found with id {id_param}"}), 404
+
+        return jsonify({"message": f"Record with id {id_param} updated successfully"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 
 
 
