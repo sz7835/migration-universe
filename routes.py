@@ -320,8 +320,37 @@ def update_registro_horas():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# 📄 Ruta 9 (PROBADA Y FUNCIONAL): Activa uno o varios registros de horas (estado=1) y actualiza usuario/fecha.
+# Recibe {"registro":[{"id":...}], "updateUser":"..."} y devuelve cuántos registros se activaron.
+@catalogo_bp.route('/registro-horas/activate', methods=['POST'])
+def activate_registro_horas():
+    try:
+        data = request.get_json()
+        if not data or 'registro' not in data or 'updateUser' not in data:
+            return jsonify({"error": "Faltan parámetros requeridos"}), 400
 
+        ids = [item.get('id') for item in data['registro'] if item.get('id')]
+        if not ids:
+            return jsonify({"error": "Cada registro debe tener un 'id'"}), 400
 
+        updated = 0
+        sql = text("""
+            UPDATE out_registro_horas
+               SET estado = 1,
+                   update_user = :update_user,
+                   update_date = NOW()
+             WHERE id = :id
+        """)
+        for _id in ids:
+            res = db.session.execute(sql, {"update_user": data['updateUser'], "id": _id})
+            updated += res.rowcount or 0
+
+        db.session.commit()
+        return jsonify({"message": f"{updated} registro(s) activados correctamente.", "ids": ids}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 
 # 📄 Route 21: Read all catalog services by area
