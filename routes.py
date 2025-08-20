@@ -380,9 +380,78 @@ def filter_projects():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Route 11 (CREAR PROYECTO): Crea un registro para un consultor con código único por consultor.
+# POST /registro-proyecto/save?idConsultor=8&codigo=SMF-003&proyectoDescripcion=Test&createUser=bsayan
+@catalogo_bp.route('/registro-proyecto/save', methods=['POST'])
+def create_project():
+    try:
+        id_persona  = request.args.get('idConsultor')
+        codigo      = request.args.get('codigo')
+        descripcion = request.args.get('proyectoDescripcion')
+        create_user = request.args.get('createUser')
 
+        # Validación mínima (mismo patrón que Route 10)
+        if not id_persona or not codigo or not descripcion or not create_user:
+            return jsonify({'error': 'Missing required params: idConsultor, codigo, proyectoDescripcion, createUser'}), 400
 
+        # Evitar duplicados por (id_persona + codigo)
+        dup_sql = """
+            SELECT id
+            FROM out_registro_proyecto
+            WHERE id_persona = :id_persona
+              AND codigo = :codigo
+            LIMIT 1
+        """
+        dup = db.session.execute(text(dup_sql), {
+            'id_persona': id_persona,
+            'codigo': codigo
+        }).fetchone()
+        if dup:
+            return jsonify({'error': 'Proyecto ya existe para ese consultor y código'}), 409
 
+        # Insert usando columnas REALES de la tabla (create_date existe en tu schema)
+        insert_sql = """
+            INSERT INTO out_registro_proyecto
+                (id_persona, codigo, descripcion, estado, create_user, create_date)
+            VALUES
+                (:id_persona, :codigo, :descripcion, :estado, :create_user, NOW())
+        """
+        params_insert = {
+            'id_persona': id_persona,
+            'codigo': codigo,
+            'descripcion': descripcion,
+            'estado': 1,          # activo por defecto
+            'create_user': create_user
+        }
+        result = db.session.execute(text(insert_sql), params_insert)
+        db.session.commit()
+
+        new_id = result.lastrowid
+
+        # Respuesta con MISMAS columnas que Route 10
+        select_sql = """
+            SELECT id, id_persona, descripcion, estado
+            FROM out_registro_proyecto
+            WHERE id = :id
+        """
+        # Si también quieres devolver 'codigo', usa este SELECT en su lugar:
+        # select_sql = """
+        #     SELECT id, id_persona, codigo, descripcion, estado
+        #     FROM out_registro_proyecto
+        #     WHERE id = :id
+        # """
+
+        row = db.session.execute(text(select_sql), {'id': new_id}).fetchone()
+        return jsonify(dict(row._mapping) if row else {
+            'id': new_id,
+            'id_persona': id_persona,
+            'descripcion': descripcion,
+            'estado': 1
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 # 📄 Route 21: Read all catalog services by area
 # - GET /ticket/catalogo/ReadAllCatalogoServicio/<id_area>
