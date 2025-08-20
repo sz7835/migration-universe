@@ -453,6 +453,47 @@ def create_project():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+# Route 12 (DELETE físico): elimina un proyecto y sus registros de horas asociados
+# PUT /registro-proyecto/delete?idProyecto=269
+@catalogo_bp.route('/registro-proyecto/delete', methods=['PUT'])
+def delete_project():
+    try:
+        id_proyecto = request.args.get('idProyecto')
+
+        if not id_proyecto:
+            return jsonify({'error': 'Missing required param: idProyecto'}), 400
+
+        # Verificar existencia
+        row = db.session.execute(
+            text("SELECT id FROM out_registro_proyecto WHERE id = :id LIMIT 1"),
+            {'id': id_proyecto}
+        ).fetchone()
+        if not row:
+            return jsonify({'error': f'Proyecto con id {id_proyecto} no existe'}), 404
+
+        # Primero borrar registros hijos en out_registro_horas
+        delete_horas_sql = """
+            DELETE FROM out_registro_horas WHERE id_proyecto = :id
+        """
+        db.session.execute(text(delete_horas_sql), {'id': id_proyecto})
+
+        # Luego borrar el proyecto en out_registro_proyecto
+        delete_proyecto_sql = """
+            DELETE FROM out_registro_proyecto WHERE id = :id
+        """
+        db.session.execute(text(delete_proyecto_sql), {'id': id_proyecto})
+
+        db.session.commit()
+
+        return jsonify({
+            'message': f'Proyecto con id {id_proyecto} eliminado correctamente (DELETE físico)'
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 # 📄 Route 21: Read all catalog services by area
 # - GET /ticket/catalogo/ReadAllCatalogoServicio/<id_area>
 # - Returns all services (nombre_servicio) for a specific area from the `catalogo_servicio` table.
