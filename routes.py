@@ -493,6 +493,66 @@ def delete_project():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+# Route 13 (UPDATE proyecto): Actualiza la información de un proyecto
+# PUT /registro-proyecto/update?idPersona=8&idProyecto=280&proyectoDescripcion=TestV2&updateUser=bsayan
+@catalogo_bp.route('/registro-proyecto/update', methods=['PUT'])
+def update_project():
+    try:
+        id_persona   = request.args.get('idPersona')
+        id_proyecto  = request.args.get('idProyecto')
+        descripcion  = request.args.get('proyectoDescripcion')
+        update_user  = request.args.get('updateUser')
+
+        # Validación mínima
+        if not id_persona or not id_proyecto or not descripcion or not update_user:
+            return jsonify({'error': 'Missing required params: idPersona, idProyecto, proyectoDescripcion, updateUser'}), 400
+
+        # Verificar existencia
+        check_sql = """
+            SELECT id FROM out_registro_proyecto
+            WHERE id = :id AND id_persona = :id_persona
+            LIMIT 1
+        """
+        exists = db.session.execute(text(check_sql), {
+            'id': id_proyecto,
+            'id_persona': id_persona
+        }).fetchone()
+        if not exists:
+            return jsonify({'error': f'Proyecto con id {id_proyecto} no existe para consultor {id_persona}'}), 404
+
+        # Actualizar registro
+        update_sql = """
+            UPDATE out_registro_proyecto
+               SET descripcion = :descripcion,
+                   update_user = :update_user,
+                   update_date = NOW()
+             WHERE id = :id AND id_persona = :id_persona
+        """
+        db.session.execute(text(update_sql), {
+            'id': id_proyecto,
+            'id_persona': id_persona,
+            'descripcion': descripcion,
+            'update_user': update_user
+        })
+        db.session.commit()
+
+        # Devolver el registro actualizado
+        select_sql = """
+            SELECT id, id_persona, codigo, descripcion, estado, update_user, update_date
+            FROM out_registro_proyecto
+            WHERE id = :id
+        """
+        row = db.session.execute(text(select_sql), {'id': id_proyecto}).fetchone()
+
+        return jsonify({
+            'message': 'Proyecto actualizado correctamente',
+            'data': dict(row._mapping) if row else {}
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 
 # 📄 Route 21: Read all catalog services by area
 # - GET /ticket/catalogo/ReadAllCatalogoServicio/<id_area>
