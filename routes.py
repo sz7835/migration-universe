@@ -590,6 +590,53 @@ def activate_projects():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+# Route 15: Incrementar estado cíclico (0→1→2→3→0)
+# POST /registro-proyecto/changeStatus?idProyecto=268&updateUser=bsayan
+@catalogo_bp.route('/registro-proyecto/changeStatus', methods=['POST'])
+def change_project_status():
+    try:
+        id_proyecto = request.args.get('idProyecto')
+        update_user = request.args.get('updateUser')
+        if not id_proyecto or not update_user:
+            return jsonify({'error': 'Missing required params: idProyecto, updateUser'}), 400
+
+        # Leer estado actual
+        row = db.session.execute(
+            text("SELECT estado FROM out_registro_proyecto WHERE id = :id LIMIT 1"),
+            {'id': id_proyecto}
+        ).fetchone()
+        if not row:
+            return jsonify({'error': f'Proyecto {id_proyecto} no existe'}), 404
+
+        try:
+            estado_actual = int(row.estado)
+        except (TypeError, ValueError):
+            return jsonify({'error': f"Estado actual inválido: {row.estado}"}), 400
+
+        # Ciclar de 0→1→2→3→0
+        nuevo_estado = (estado_actual + 1) % 4
+
+        db.session.execute(
+            text("""
+                UPDATE out_registro_proyecto
+                   SET estado = :nuevo_estado,
+                       update_user = :update_user,
+                       update_date = NOW()
+                 WHERE id = :id
+            """),
+            {'id': id_proyecto, 'update_user': update_user, 'nuevo_estado': nuevo_estado}
+        )
+        db.session.commit()
+
+        return jsonify({
+            'message': f'Estado del proyecto {id_proyecto} actualizado correctamente.',
+            'estado_anterior': estado_actual,
+            'estado_nuevo': nuevo_estado
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 # 📄 Route 21: Read all catalog services by area
 # - GET /ticket/catalogo/ReadAllCatalogoServicio/<id_area>
