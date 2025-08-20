@@ -553,6 +553,43 @@ def update_project():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+# Route 14 (ACTIVAR proyectos): Activa uno o varios proyectos (estado=1)
+# POST /registro-proyecto/activate
+@catalogo_bp.route('/registro-proyecto/activate', methods=['POST'])
+def activate_projects():
+    try:
+        update_user = request.form.get('updateUser') or (request.json or {}).get('updateUser')
+        proyects    = request.form.getlist('proyects') or (request.json or {}).get('proyects')
+
+        if not update_user or not proyects:
+            return jsonify({'error': 'Missing required params: updateUser y proyects'}), 400
+
+        # Si vienen como string separados por coma → convertir a lista
+        if isinstance(proyects, str):
+            proyects = [p.strip() for p in proyects.split(',') if p.strip()]
+
+        # Actualizar estado a 1 (activo)
+        update_sql = """
+            UPDATE out_registro_proyecto
+               SET estado = 1,
+                   update_user = :update_user,
+                   update_date = NOW()
+             WHERE id IN :ids
+        """
+        db.session.execute(
+            text(update_sql),
+            {'update_user': update_user, 'ids': tuple(proyects)}
+        )
+        db.session.commit()
+
+        return jsonify({
+            'message': f'Proyectos {proyects} activados correctamente'
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 
 # 📄 Route 21: Read all catalog services by area
 # - GET /ticket/catalogo/ReadAllCatalogoServicio/<id_area>
