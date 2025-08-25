@@ -683,3 +683,42 @@ def update_ticket(id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+# Route 17: Derivar/Asignar Ticket (proyecto) a otro usuario
+# Actualiza id_persona, update_user y update_date en out_registro_proyecto
+
+@catalogo_bp.route('/ticket/usuario/asignar', methods=['POST'])
+def asignar_ticket_usuario():
+    try:
+        usuario  = request.args.get('usuario', type=str)
+        id_ticket = request.args.get('idTicket', type=int)
+        asignar  = request.args.get('asignar', type=int)   # id de la persona a asignar
+
+        if not usuario or id_ticket is None or asignar is None:
+            return jsonify({'error': 'Faltan parámetros requeridos: usuario, idTicket, asignar'}), 400
+
+        sql = text("""
+            UPDATE out_registro_proyecto
+            SET 
+                id_persona   = :asignar,
+                update_user  = :usuario,
+                update_date  = NOW()
+            WHERE id = :id_ticket
+        """)
+
+        result = db.session.execute(sql, {
+            'asignar': asignar,
+            'usuario': usuario,
+            'id_ticket': id_ticket
+        })
+        db.session.commit()
+
+        if result.rowcount == 0:
+            return jsonify({'error': 'Proyecto/Ticket no encontrado'}), 404
+
+        return jsonify({'message': 'Ticket derivado correctamente', 'idTicket': id_ticket, 'asignadoA': asignar}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
