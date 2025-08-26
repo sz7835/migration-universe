@@ -722,3 +722,44 @@ def asignar_ticket_usuario():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+# Route 18: Reasignar Área (ajustado a tu DB real)
+# Usa out_registro_proyecto: id_persona⇐idAreaDestino, codigo⇐idCatalogoServicio, update_user/update_date
+
+@catalogo_bp.route('/ticket/reassign/<int:id>', methods=['POST'])
+def reassign_area(id):
+    try:
+        id_area_destino      = request.form.get('idAreaDestino', type=int)   # ⇢ id_persona
+        id_catalogo_servicio = request.form.get('idCatalogoServicio')        # ⇢ codigo (texto)
+        usu_editado          = request.form.get('usuEditado', type=str)
+
+        if id_area_destino is None or not id_catalogo_servicio or not usu_editado:
+            return jsonify({'error': 'Faltan parámetros requeridos: idAreaDestino, idCatalogoServicio, usuEditado'}), 400
+
+        sql = text("""
+            UPDATE out_registro_proyecto
+            SET 
+                id_persona  = :id_area_destino,
+                codigo      = :id_catalogo_servicio,
+                update_user = :usu_editado,
+                update_date = NOW()
+            WHERE id = :id
+        """)
+
+        result = db.session.execute(sql, {
+            'id_area_destino': id_area_destino,
+            'id_catalogo_servicio': id_catalogo_servicio,
+            'usu_editado': usu_editado,
+            'id': id
+        })
+        db.session.commit()
+
+        if result.rowcount == 0:
+            return jsonify({'error': 'Proyecto/Ticket no encontrado'}), 404
+
+        return jsonify({'message': 'Ticket reasignado correctamente', 'idTicket': id}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
