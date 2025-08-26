@@ -763,3 +763,42 @@ def reassign_area(id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+# Route 19: Reabrir Ticket (query params, método POST)
+# Actualiza estado, descripcion, update_user y update_date en out_registro_proyecto
+
+@catalogo_bp.route('/ticket/cerrar', methods=['POST'])
+def reabrir_ticket():
+    try:
+        usuario     = request.args.get('usuario', type=str)
+        id_ticket   = request.args.get('idTicket', type=int)
+        estado_id   = request.args.get('estadoId', type=int)
+        descripcion = request.args.get('descripcion', type=str)
+
+        if not usuario or id_ticket is None or estado_id is None or not descripcion:
+            return jsonify({'error': 'Faltan parámetros requeridos: usuario, idTicket, estadoId, descripcion'}), 400
+
+        sql = text("""
+            UPDATE out_registro_proyecto
+            SET 
+                estado      = :estado,
+                descripcion = :descripcion,
+                update_user = :usuario,
+                update_date = NOW()
+            WHERE id = :id
+        """)
+        result = db.session.execute(sql, {
+            'estado': estado_id,
+            'descripcion': descripcion,
+            'usuario': usuario,
+            'id': id_ticket
+        })
+        db.session.commit()
+
+        if result.rowcount == 0:
+            return jsonify({'error': 'Proyecto/Ticket no encontrado'}), 404
+
+        return jsonify({'message': 'Ticket reabierto correctamente', 'idTicket': id_ticket}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
