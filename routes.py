@@ -802,3 +802,72 @@ def reabrir_ticket():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+# Route 20: Campos Filtro Tickets (GET)
+# Devuelve listas para filtros desde out_registro_proyecto
+
+@catalogo_bp.route('/ticket/verTickets/read', methods=['GET'])
+def get_ticket_filter_fields():
+    try:
+        # DISTINCT estados
+        r_estados = db.session.execute(text("""
+            SELECT DISTINCT estado
+            FROM out_registro_proyecto
+            WHERE estado IS NOT NULL
+            ORDER BY estado
+        """)).all()
+        estados = [int(x[0]) for x in r_estados if x[0] is not None]
+
+        # DISTINCT id_persona
+        r_personas = db.session.execute(text("""
+            SELECT DISTINCT id_persona
+            FROM out_registro_proyecto
+            WHERE id_persona IS NOT NULL
+            ORDER BY id_persona
+        """)).all()
+        personas = [int(x[0]) for x in r_personas if x[0] is not None]
+
+        # DISTINCT codigo
+        r_codigos = db.session.execute(text("""
+            SELECT DISTINCT codigo
+            FROM out_registro_proyecto
+            WHERE codigo IS NOT NULL AND codigo <> ''
+            ORDER BY codigo
+        """)).all()
+        codigos = [x[0] for x in r_codigos if x[0] is not None]
+
+        # DISTINCT usuarios (create/update)
+        r_usuarios = db.session.execute(text("""
+            SELECT u FROM (
+                SELECT DISTINCT update_user AS u
+                FROM out_registro_proyecto
+                WHERE update_user IS NOT NULL AND update_user <> ''
+                UNION
+                SELECT DISTINCT create_user AS u
+                FROM out_registro_proyecto
+                WHERE create_user IS NOT NULL AND create_user <> ''
+            ) tmp
+            ORDER BY u
+        """)).all()
+        usuarios = [x[0] for x in r_usuarios]
+
+        # Rango de fechas de creación
+        r_dates = db.session.execute(text("""
+            SELECT MIN(create_date) AS min_dt, MAX(create_date) AS max_dt
+            FROM out_registro_proyecto
+        """)).first()
+        rango_creacion = {
+            "min": r_dates[0].strftime("%Y-%m-%d %H:%M:%S") if r_dates and r_dates[0] else None,
+            "max": r_dates[1].strftime("%Y-%m-%d %H:%M:%S") if r_dates and r_dates[1] else None,
+        }
+
+        return jsonify({
+            "estados": estados,
+            "personas": personas,
+            "codigos": codigos,
+            "usuarios": usuarios,
+            "rango_creacion": rango_creacion
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
